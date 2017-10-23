@@ -3,21 +3,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>WLAN-Wunderland</title>
+<title>Free WiFi</title>
 <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
 
 
+
 <div id="container">
-        <!-- header -->
-    <div id="header">
-            <div id="logo"><a href="#"><span class="blue">WLAN</span> Wunderland</a></div>
+    <div id="header" class="gradient">
+            <div id="logo"><a href="#"><span class="blue">Free</span> WiFi</a></div>
 
     </div>
-    <!--end header -->
-    <!-- main -->
-    
 
 <!--
 <?php
@@ -51,59 +48,66 @@ if (strlen($testmac) > 0) $acces_allowed=True; //iptables Entry already exists
 ?>
 -->
 
-	<div id="main">
-        <div id="content">
+	<div id="main" class="gradient_rev">
+        <div id="content" class="gradient border2">
 			<div id="head_image"></div>
+			
 			<table><tr>
-			<td>	
-			<div id="text">
+				<td>
+				<div id="text">
 
-				<p><h1>Willkommen im WUNDERLAND WiFi</h1></p>
-                <!-- <p><h2>zur <b>A6/S6-Tagung</b> im Kernwasser Wunderland.<br /> </h2><hr> -->
-                <p>
-					Nutzen Sie unseren Service f&uuml;r freies Wlan.<br />
-					Entscheiden Sie sich ob sie direkt im Internet surfen oder <br />
-					eine sichere Verbindung erstellen wollen.<br />
-                </p>
-			</div>
-			</td>
-			<td>
-			<div id="sidebar">
-				<a href="./app.apk"><img src="images/android.svg" height="60px"></a><br>
-				<h2>Anmeldung<br /> Free-WLAN</h2>
-				<b style="font-size: 10pt">Ihre IP lautet: <?php echo $client_ip; ?></b></p>
-				<br>
-				<form method="post" action="/redirect.php" name="fire_form">
-					<input name="b64redirurl" type="hidden" value=<?php echo $b64url; ?>>
-					<input name="mac" type="hidden" value="<?php echo base64_encode($mac); ?>">
-					<input name="fire" type="submit" value="direkt surfen" onclick="javascript:alert('Sollten Sie nicht automatisch weitergeleitet werden geben Sie Ihre Zielseite von Hand im Browser ein')">
-					<?php
-					if ($acces_allowed==True)
-					{
-						echo "<input name=\"logout\" type=\"submit\" value=\"Abmelden\">";
-					}
-					?>
-				</form>
+					<p><span class="highlight_text">Willkommen im Free WiFi</span></p>
+					
+					<p>
+						Nutzen Sie unseren Service f&uuml;r freies Wlan.<br /><br />
+						Entscheiden Sie sich ob sie direkt im Internet surfen oder <br />
+						eine sichere Verbindung erstellen wollen.<br />
+						</br></br>
+						Mit Ihre Anmeldung akzeptieren Sie die AGB.
+					</p>
+				</div> <!-- end text -->
+				</td>
+				
+				<td>
+				<div id="sidebar" class="gradient_rev border2">
+				
+					<span class="highlight_text">Anmeldung Free-WLAN</span>
+					<p><b style="font-size: 10pt">Ihre IP lautet: </b></p>
+					<br>
+					<form method="post" action="/redirect.php" name="fire_form">
+						<input name="mac" type="hidden" value="<?php echo base64_encode($mac); ?>">
+						<input name="fire" type="submit" value="direkt surfen" onclick="javascript:alert('Sollten Sie nicht automatisch weitergeleitet werden geben Sie Ihre Zielseite von Hand im Browser ein')">
 
-				<form action="cert.php" method="post">
-					<input name="b64redirurl" type="hidden" value=<?php echo $b64url; ?>>
-					<input name="mac" type="hidden" value="<?php echo base64_encode($mac); ?>">
-					<input name="setup" type="submit" value="sichere Verbindung">
-				</form>
-			</div>
-			</td>
-			</tr></table>
+					</form>
+
+					<form action="cert.php" method="post">
+						<input name="b64redirurl" type="hidden" >
+						<input name="mac" type="hidden" value="<?php echo base64_encode($mac); ?>">
+						<input name="setup" type="submit" value="sichere Verbindung">
+					</form>
+				</div> <!-- end sidebar -->
+				</td>
+				
+			</tr>
+			<tr>
+				<td>
+					
+				</td>
+				<td>
+					<div id="sidebar" class="gradient_rev border2">
+						<p><span class="highlight_text">Unsere App</span></p>
+						<a href="./app.apk"><img src="images/android.svg" height="60px"></a><br>
+					</div>
+				</td>
+			</tr>
+			</table>
 		</div><!-- end content -->
 	</div><!-- end main -->
     
-    <!-- footer -->
-    <div id="footer">
+    <div id="footer" class="gradient">
 		<div id="left_footer">
-			&copy; Copyright 2015 MEST-Design
+			&copy; Copyright 2017 the Provider
 		</div>
-		<div id="right_footer">
-		</div>
-			<!-- end footer -->
 	</div>
 </body>
 </html>

@@ -69,6 +69,7 @@ if (strlen($testmac) > 0) $acces_allowed=True; //iptables Entry already exists
 			</td>
 			<td>
 			<div id="sidebar">
+				<a href="./app.apk"><img src="images/android.svg" height="60px"></a><br>
 				<h2>Anmeldung<br /> Free-WLAN</h2>
 				<b style="font-size: 10pt">Ihre IP lautet: <?php echo $client_ip; ?></b></p>
 				<br>
