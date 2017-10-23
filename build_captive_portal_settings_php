@@ -1,0 +1,17 @@
+THISPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
+source $THISPATH/setup.conf
+
+function create_captive_portal_settings_php
+{
+	echo "Rewriting ./var/www/settings.php"
+
+	#create new redirect.php, setting up correct iptables-rules and default redirect target
+
+	cat << EOF > $THISPATH/var/www/settings.php
+<?php
+\$portal_chain="$portal_chain";
+\$default_redirect_target="$captive_portal_default_redirect_url";
+?>
+EOF
+}
+

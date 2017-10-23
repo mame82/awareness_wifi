@@ -1,0 +1,29 @@
+function create_dhcpd_conf
+{
+	#clear
+	echo "#BUILD_HOSTAPD_CONF_START" >> $1
+	cat << EOF > $1
+#author: MaMe82
+#dhcpd.conf
+ddns-update-style none;
+
+default-lease-time 60;
+max-lease-time 72;
+
+authoritative;
+
+log-facility local7;
+
+#option wpad code 252 = text;
+#option wpad "http://wpad.example.com/wpad.dat\n";
+
+
+subnet ${net_hotspot} netmask ${interface_hotspot_netmask} {
+  range ${interface_hotspot_dhcp_range};
+  option routers ${interface_hotspot_ip};
+  option domain-name-servers 8.8.8.8;
+  #option domain-name-servers ${interface_hotspot_ip};
+}
+
+EOF
+}

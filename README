@@ -1,0 +1,69 @@
+#author: MaMe82
+
+============
+Extended hotspot scripts for wifi security talk
+this scripts run on standard kali machine and Galaxy S3 i9300 with modified SMDK4412 kernel and
+nethunter 2.0 (sana) rootfs
+
+Requierement
+============
+- installed mana-toolkit (modified hostapd)
+- installed "dhcpd" (isn't default in newer kali rollin) --> $ apt-get install isc-dhcp-server
+- if dhcpd errors out because of missing lease file: $ touch /var/lib/dhcp/dhcpd.leases
+- the wlan interface used for enabeling the hotspot MUSTN'T BE MANAGED BY NetworkManager
+otherwise hostapd wouldn't be able to set it up, this could be achieved by editing /etc/NetworkManager/NetworkManager.conf
+example:
+----- begin NetworkManager.conf -------------------
+[main]
+plugins=ifupdown,keyfile
+
+[ifupdown]
+managed=false
+
+#unmanaged devices here, identified per MAC address
+[keyfile]
+unmanaged-devices=mac:00:c0:ca:82:1b:89
+unmanaged-devices=mac:cc:7e:e7:59:49:6f
+----- end NetworkManager.conf -------------------
+
+
+Prerequisits for NETHUNTER (on Galaxy S3 i9300)
+===========================
+- setup.conf --> use_nethunter must be set to true
+- /usr/lib/mana-toolkit/hostapd  has to be installed (with kali)
+- to make captive portal work 'sudo' is needed, sudo works with suid-bit and thus the partition homing the sudo binary
+must be mounted without "nosuid" --> for chroot kali of nethunter, which lives in /data/local/kali-armhf in android,
+this means the /data partition has to be remounted before using this scripts. with the following steps
+1) open Terminal
+2) $ su
+3) $ mount -o remount,rw /data
+4) $ bootkali
+5) cd to script path, run x.sh
+
+- in order to make the script work with external wifi 'ALFA AWUS036NHA', external kernel modules need to be loaded
+1) open Terminal
+2) $ su
+3) $ modprobe ath9k_htc
+4) $ bootkali
+5) $ ifconfig wlan1 up (internal wifi must be enabled before, otherwise ALFA module will be mapped to wlan0
+
+REMARK: if script is configured to work with wlan0 as hotspot on nethunter (meaning hotspot is run on internal wifi)
+the kernel module for internal wifi card is reloaded in accesspoint mode and some inteffering processes are killed,
+to make wifi work again, device needs to be rebooted
+Internal wifi is not capable of packet injection, thus hostapd doesn't work in karma mode (ext wifi needed for this).
+Same goes for changing mac adress, internal wifi can't do this
+
+Remark2: ettercap 0.8.2 has a bug which makes it crash running out of resources, this is fixed in version 0.8.3 which isn't
+delivered with kali sana at time of creating this document
+
+x.sh
+=====
+start menudriven access point
+
+setup.conf
+==========
+settings for access point (net, name etc.)
+
+
+
+

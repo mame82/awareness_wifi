@@ -1,0 +1,46 @@
+import cStringIO
+from PIL import Image, ImageDraw, ImageFont, ImageEnhance
+from libmproxy.protocol.http import decoded
+
+FONT = '/usr/share/fonts/truetype/msttcorefonts/Arial.ttf'
+
+def add_watermark(context, in_img, angle=23, opacity=0.25):
+    text = "CyberAwareness"
+    img = in_img.convert('RGB')
+    watermark = Image.new('RGBA', img.size, (0,0,0,0))
+    size = 2
+    n_font = ImageFont.truetype(FONT, size)
+    n_width, n_height = n_font.getsize(text)
+    while n_width+n_height < watermark.size[0]:
+        size += 2
+        n_font = ImageFont.truetype(FONT, size)
+        n_width, n_height = n_font.getsize(text)
+    draw = ImageDraw.Draw(watermark, 'RGBA')
+    draw.text(((watermark.size[0] - n_width) / 2,
+              (watermark.size[1] - n_height) / 2),
+              text, font=n_font, fill=(255,0,0,255))
+    watermark = watermark.rotate(angle,Image.BICUBIC)
+    alpha = watermark.split()[3]
+    alpha = ImageEnhance.Brightness(alpha).enhance(opacity)
+    watermark.putalpha(alpha)
+    return Image.composite(watermark, img, watermark)
+    
+def response(context, flow):
+	context.log("content type -------------------")
+	context.log(flow.response.headers.get_first("content-type", ""))
+	if flow.response.headers.get_first("content-type", "").startswith("image"):
+		with decoded(flow.response):  # automatically decode gzipped responses.
+			try:
+				s = cStringIO.StringIO(flow.response.content)
+				img = Image.open(s).convert('LA').transpose(Image.FLIP_TOP_BOTTOM)
+				img = add_watermark(context,img,0, 0.95)
+				context.log("Watermark placed","error")
+				context.log("=====================")
+				s2 = cStringIO.StringIO()
+				img.save(s2, "png")
+				flow.response.content = s2.getvalue()
+				flow.response.headers["content-type"] = ["image/png"]
+			except:  # Unknown image types etc.
+				context.log("try failed ----")
+				pass
+				

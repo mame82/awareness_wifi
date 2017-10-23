@@ -1,0 +1,53 @@
+# Author: MaMe82
+
+THISPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
+source $THISPATH/setup.conf
+
+function check_sudoers
+{
+	if ! grep -q "www-data ALL=NOPASSWD:/sbin/iptables -t mangle -I $portal_chain -m mac --mac-source "'??\\:??\\:??\\:??\\:??\\:?? -j RETURN' /etc/sudoers; then
+		return 1
+	fi
+	
+	if ! grep -q "www-data ALL=NOPASSWD:/sbin/iptables -t mangle -D $portal_chain -m mac --mac-source "'??\\:??\\:??\\:??\\:??\\:?? -j RETURN' /etc/sudoers; then
+		return 1
+	fi
+	
+	if ! grep -q "www-data ALL=NOPASSWD:/sbin/iptables -t mangle -L $portal_chain" /etc/sudoers; then
+		return 1
+	fi
+	
+	if ! grep -q 'www-data ALL=(ALL) NOPASSWD: /etc/init.d/apache2 reload' /etc/sudoers; then
+		return 1
+	fi
+
+        if ! grep -q "www-data ALL=NOPASSWD:/usr/sbin/arp -a*" /etc/sudoers; then
+                return 1
+        fi
+	
+	return 0
+}
+
+function patch_sudoers
+{
+	echo "Patching /etc/sudoers backup goes to /etc/sudoers.backup"
+	cp /etc/sudoers /tmp/sudoers.new
+	cp /etc/sudoers /etc/sudoers.backup
+	echo "" >> /tmp/sudoers.new
+	echo "######## Begin temporary rules for CaptivePortal ###############" >> /tmp/sudoers.new
+	echo "www-data ALL=NOPASSWD:/sbin/iptables -t mangle -I $portal_chain -m mac --mac-source "'??\:??\:??\:??\:??\:?? -j RETURN' >> /tmp/sudoers.new
+	echo "www-data ALL=NOPASSWD:/sbin/iptables -t mangle -D $portal_chain -m mac --mac-source "'??\:??\:??\:??\:??\:?? -j RETURN' >> /tmp/sudoers.new
+	echo "www-data ALL=NOPASSWD:/sbin/iptables -t mangle -L $portal_chain" >> /tmp/sudoers.new
+	echo 'www-data ALL=(ALL) NOPASSWD: /etc/init.d/apache2 reload' >> /tmp/sudoers.new
+	echo 'www-data ALL=NOPASSWD:/usr/sbin/arp -a*' >> /tmp/sudoers.new
+	echo "######## End temporary rules for CaptivePortal #################" >> /tmp/sudoers.new
+	cp /tmp/sudoers.new /etc/sudoers
+
+}
+
+function restore_sudoers
+{
+	cp /etc/sudoers.backup /etc/sudoers
+}
+
+
