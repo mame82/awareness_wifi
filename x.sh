@@ -6,7 +6,9 @@ SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 
 source $SCRIPTPATH/setup.conf
 NOW=$(date +"%F_%H_%M")
-LOGPREFIX=$LOGDIR${NOW}_
+LOGPREFIX=$LOGDIR/${NOW}_
+
+echo "Logging to $LOGPREFIX"
 
 # path to karma-capable hostapd (from mana-toolkit)
 hostapd=/usr/lib/mana-toolkit/hostapd
@@ -27,13 +29,24 @@ source $SCRIPTPATH/build_dhcpd_conf
 source $SCRIPTPATH/build_apache_conf
 source $SCRIPTPATH/build_captive_portal_settings_php
 source $SCRIPTPATH/build_sudoer_rules
-source $SCRIPTPATH/correct_hosts
 
 
 #Create log-dir if no existent
 if [[ ! -e $LOGDIR ]]; then
 	mkdir -p $LOGDIR
 fi
+
+
+function correct_hosts
+{
+	if $(cat /etc/hosts | grep -q $(hostname))
+	then
+		echo "/etc/hosts correct"
+	else
+		echo "/etc/hosts not correct, fixing ..."
+		echo 127.0.0.1 `hostname` >> /etc/hosts
+	fi
+}
 
 
 function add_unmanaged_mac()
@@ -439,7 +452,7 @@ read
 #############################################
 
 # create WLAN list from hostapd log (karma)
-$SCRIPTPATH/start-kerni-karma-log.sh ${LOGPREFIX}hostapd.log
+$SCRIPTPATH/parselog.sh ${LOGPREFIX}hostapd.log
 
 pkill dhcpd
 pkill sslstrip
