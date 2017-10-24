@@ -1,0 +1,6 @@
+[submodule "sslstrip2"]
+	path = sslstrip2
+	url = https://github.com/mame82/sslstrip2
+[submodule "dns2proxy"]
+	path = dns2proxy
+	url = https://github.com/mame82/dns2proxy

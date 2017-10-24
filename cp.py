@@ -10,7 +10,11 @@ import urlparse
 import sys
 import base64
 import getopt
+import signal
 
+def sigterm_handler(_signo, _stack_frame):
+    # Raises SystemExit(0), to catch finally block of main Thread
+    sys.exit(0)
 
 class IPTablesIF(object):
 	cpchain_name = "portalchain"
@@ -334,7 +338,7 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 		field_data = self.rfile.read(length)
 		fields = urlparse.parse_qs(field_data)
 
-		if "redirect.php" in self.path:
+		if "placeholder_grant_access" in self.path:
 			if "fire" in fields:
 				mac = self.getMacFromARPCache(self.getClientIP())
 				if len(mac) > 0:
@@ -394,4 +398,5 @@ if __name__ == "__main__":
 	if len(sys.argv) < 1:
 		print "to few arguments"
 		sys.exit()
+	signal.signal(signal.SIGTERM, sigterm_handler)
 	main(sys.argv[1:])

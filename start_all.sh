@@ -1,6 +1,7 @@
 #!/bin/bash
 # Author: MaMe82
 
+
 # The interface used for providing the hotspot
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 
@@ -26,7 +27,7 @@ cp -R  ${SCRIPTPATH}/cert ${TMPWORKDIR}/cert
 #build conf files
 source $SCRIPTPATH/build_hostapd_conf
 source $SCRIPTPATH/build_dhcpd_conf
-source $SCRIPTPATH/build_apache_conf
+
 
 
 #Create log-dir if no existent
@@ -236,7 +237,6 @@ create_hostapd_conf ${TMPWORKDIR}/hostapd.conf
 create_dhcpd_conf ${TMPWORKDIR}/dhcpd.conf
 
 # ToDo: only needed if cp is started --> move to if
-restore_enabled_virtual_hosts
 ask_for_cp
 ask_for_sslstrip
 ask_for_mitmproxy
@@ -327,6 +327,9 @@ iptables -t nat -A POSTROUTING -o $interface_upstream -j MASQUERADE
 #start portal webservice
 if [ "$ENABLE_CP" == true ]
 then
+	# kill remaining CP (only a single process)
+	kill $(ps -aux | grep cp.py | grep -v -e grep | awk '{print $2}') 2> /dev/null
+	# start python CP
 	python cp.py -i $interface_hotspot -h $interface_hotspot_ip -p 8080 &
 fi
 
@@ -409,8 +412,8 @@ iptables -t mangle -F
 if [ "$ENABLE_CP" == true ]
 then
 	echo "Killing CP..."
-	# ToDo: SIGTERM has to be sent to Captive Portal Process
-	killall python
+	
+	kill $(ps -aux | grep cp.py | grep -v -e grep | awk '{print $2}') 2> /dev/null
 fi
 
 if [ "$MITMDUMP_RUNNING" == true ]
