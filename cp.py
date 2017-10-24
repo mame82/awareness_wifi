@@ -6,17 +6,92 @@ import posixpath
 import urllib
 import os
 import mimetypes
-import shutil
 import urlparse
+import sys
+import base64
+import getopt
 
-lport       = 9090
-lhost = "10.0.0.1"
 
+class IPTablesIF(object):
+	cpchain_name = "portalchain"
+	lhost = "10.0.0.1"
+	lport = 9090
+	hotspotif = "wlan1"
+		
+	def __init__(self):
+		print "IPTable deleting former captive portal rules"
+		self.clear_chains()
+		print "IPTable adding new captive portal rules"
+		self.setup_portal_chain()
+	
+	def exec_comand(self, command):
+		p = Popen(command.split(" "), stdin=PIPE, stdout=PIPE, stderr=PIPE)
+		output, err = p.communicate()
+		
+		res = output + err
+		
+		return res
+		
+	def clear_chains(self):
+		self.exec_comand("iptables -t mangle -F %s"%(self.cpchain_name)) # flush portal chain
+		self.exec_comand("iptables -t mangle -D PREROUTING -j %s"%(self.cpchain_name)) # remove portal chain from prerouting
+		self.exec_comand("iptables -t mangle -X %s"%(self.cpchain_name)) # delete portal chain
+		self.exec_comand("iptables -t nat -D PREROUTING -m mark --mark 99 -p tcp --dport 80 -j REDIRECT --to-port " + str(self.lport))
+		self.exec_comand("iptables -t filter -D FORWARD -m mark --mark 99 -j DROP")
+		
+	def check_if_mac_allowed(self, mac):
+		if len(mac) > 0:
+			res=self.exec_comand("iptables -t mangle -L %s"%(self.cpchain_name))
+			if mac in res:
+				# already present
+				return True
+			else:
+				# not present
+				return False
+		else:
+			return True # we return true to avoid taking the decission to add an empty MAC
+		
+		
+	def remove_allowed_mac(self, mac):
+		if len(mac) > 0:
+			self.exec_comand("iptables -t mangle -D %s -m mac --mac-source %s -j RETURN"%(self.cpchain_name, mac))
+		
+	def add_allowed_mac(self, mac):
+		if len(mac) > 0:
+			if not self.check_if_mac_allowed(mac):
+				self.exec_comand("iptables -t mangle -I %s -m mac --mac-source %s -j RETURN"%(self.cpchain_name, mac))
+		
+	def setup_portal_chain(self):
+		# check if basic rule have been applied
+		print "setup captive portal redirect firewall rules"
+
+		# create chain for captive portal in mangle
+		self.exec_comand("iptables -t mangle -N " + self.cpchain_name)
+		#redirect packets from mangle prerouting to  portal_chain
+		self.exec_comand("iptables -t mangle -A PREROUTING -j " + self.cpchain_name)
+		#mark all packets in mangle portal_chain with 99 (eception rules will be added by captive portal later on)
+		self.exec_comand("iptables -t mangle -i " + self.hotspotif + " -A " + self.cpchain_name + " -j MARK --set-mark 99")
+
+		#redirect http requests marked with 99 to CP
+		self.exec_comand("iptables -t nat -A PREROUTING -m mark --mark 99 -p tcp --dport 80 -j REDIRECT --to-port " + str(self.lport))
+
+		#drop marked packets which aren't directed to port 80 
+		self.exec_comand("iptables -t filter -A FORWARD -m mark --mark 99 -j DROP")
 
 class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 	wwwroot="var/www/"
-	portalpage="portal.php"
+	portalpage="index.html"
+	placeholder_prefix = "placeholder_"
+	default_page="http://www.google.de"
+	iptif = None
+
+	lport       = 9090
+	lhost = "10.0.0.1"
 	
+	generate404 = ['/success.txt']
+	generate302 = ['/generate_204']
+	
+	# define additional mimetypes
 	if not mimetypes.inited:
 		mimetypes.init() # try to read system mime.types
 	extensions_map = mimetypes.types_map.copy()
@@ -27,10 +102,34 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 		'.h': 'text/plain',
 		})
 
+
+	def exec_comand(self, command):
+		p = Popen(command.split(" "), stdin=PIPE, stdout=PIPE, stderr=PIPE)
+		output, err = p.communicate()
+		
+		res = output + err
+		
+		return res
 	
+	def findPlaceholder(self, text):
+		res = re.findall(self.placeholder_prefix + "[a-zA-Z0-9_-]*", text)
+		
+		# remove doubles
+		res = list(set(res))
+		
+		# remove prefix
+		res = [ r.replace(self.placeholder_prefix, "") for r in res ]
+		
+		return res
+		
+	def substitutePlaceholder(self, placeholderName, value, text):
+		return text.replace(self.placeholder_prefix + placeholderName, value)
+
+	# get client IP out of current request
 	def getClientIP(self):
 		return self.client_address[0]
 		
+	# resolve IP to MAC from ARP cache
 	def getMacFromARPCache(self, ip):
 		p = Popen(['arp', '-a', ip], stdin=PIPE, stdout=PIPE, stderr=PIPE)
 		output, err = p.communicate()
@@ -49,30 +148,9 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 		
 		return mac
 	
-	#this is the index of the captive portal
-	#it simply redirects the user to the to login page
-	html_redirect = """
-	<html><head>
-		<meta http-equiv="refresh" content="0; url=http://%s:%s/login" />
-	</head>
-	<body><b>Redirecting ...</b></body></html>
-	"""%(lhost, lport)
 	
+	# try to determine mimetype based on extension of given path (no content inspection)
 	def guess_type(self, path):
-		"""Guess the type of a file.
-
-		Argument is a PATH (a filename).
-
-		Return value is a string of the form type/subtype,
-		usable for a MIME Content-type header.
-
-		The default implementation looks the file's extension
-		up in the table self.extensions_map, using application/octet-stream
-		as a default; however it would be permissible (if
-		slow) to look inside the data to make a better guess.
-
-		"""
-
 		base, ext = posixpath.splitext(path)
 		if ext in self.extensions_map:
 			return self.extensions_map[ext]
@@ -83,6 +161,7 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 			return self.extensions_map['']
 
 
+	# translate given URI path to file path
 	def translate_path(self, path):
 		"""Translate a /-separated PATH to the local filename syntax.
 
@@ -105,6 +184,7 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 			path = os.path.join(path, word)
 		return path
 	
+	# prepare HTTP response
 	def send_response(self, code, message=None):
 		"""Send the response header and log the response code.
 
@@ -126,6 +206,32 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 		# self.send_header('Date', self.date_time_string())
 		self.send_header('Server', "Captive Portal by MaMe82")
 	
+	
+	def respond302(self, host, port, uri):
+		resp = """
+		<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+		<html><head>
+		<title>302 Found</title>
+		</head><body>
+		<h1>Found</h1>
+		<p>The document has moved <a href="http://%s:%s%s">here</a>.</p>
+		</body></html>
+		"""%(host, port, uri)
+	
+		self.send_response(302)
+		self.send_header("Content-type", "text/html")
+		self.send_header("Content-Length", str(len(resp)))
+		self.send_header("Location", "http://%s:%s%s"%(host, port, uri))
+		self.send_header("Connection", "close")
+		self.end_headers()
+		self.wfile.write(resp)
+	
+	def respond404(self):
+		self.send_response(404)
+		self.send_header("Connection", "close")
+		self.end_headers()
+		
+	# send PortalPage as response
 	def sendPortalPage(self):
 		path = self.translate_path(self.portalpage)
 	
@@ -133,64 +239,96 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 		
 		try:
 			f = open(path, 'rb')
+			t = self.parseFile(f)
 		except IOError:
-			self.send_response(200)
-			self.send_header("Content-type", "text/html")
-			self.end_headers()
-			self.wfile.write(self.html_redirect)
+			self.respond404()
 			return
+		
+			
 			
 		self.send_response(200)
 		self.send_header("Content-type", ctype)
 		fs = os.fstat(f.fileno())
-		self.send_header("Content-Length", str(fs[6]))
+		self.send_header("Content-Length", str(len(t)))
 		self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
 		self.end_headers()
 
-		if f:
-			self.copyfile(f, self.wfile)
-			f.close()
-	
+		self.wfile.write(t)
+		f.close()
+			
+
+	def parseFile(self, f):
+		client_ip = self.getClientIP()
+		client_mac = self.getMacFromARPCache(client_ip)
+				
+		t = f.read()
+		placeholders = self.findPlaceholder(t)
+		
+		print "=============================="
+		print "Fetched palceholders:"
+		print placeholders
+		print "=============================="
+		
+		
+
+		if "clientmac_b64" in placeholders:
+			t = self.substitutePlaceholder("clientmac_b64", base64.b64encode(client_mac), t)
+		if "client_ip" in placeholders:
+			t = self.substitutePlaceholder("client_ip", client_ip, t)
+		return t
+
+	# handle GET requests
 	def do_GET(self):
 		path = self.translate_path(self.path)
 
+		if self.path in self.generate404:
+			print "Generating 404 for %s"%(self.path)
+			self.respond404()
+			return
+
+		if os.path.isdir(path):
+			print "=========================================================="
+			print "File %s not found 302 redirecting to portal page"%(path)
+			print self.headers
+			print "=========================================================="
+			self.respond302(self.lhost, self.lport, "/"+self.portalpage)
+			return
+
 		f = None
 		try:
-			# Always read in binary mode. Opening files in text mode may cause
-			# newline translations, making the actual size of the content
-			# transmitted *less* than the content-length!
 			f = open(path, 'rb')
+			t = self.parseFile(f)
+			
 		except IOError:
-			print "File %s not found, sending portal page"%(path)
-			self.sendPortalPage()
+			print "=========================================================="
+			print "File %s not found 302 redirecting to portal page"%(path)
+			print self.headers
+			print "=========================================================="
+			self.respond302(self.lhost, self.lport, "/"+self.portalpage)
 			return
-		
+			
 		ctype = self.guess_type(path) # determine mimetype based on extension		
 		# print "MimeType detected: %s"%(ctype)
 
 		self.send_response(200)
 		self.send_header("Content-type", ctype)
 		fs = os.fstat(f.fileno())
-		self.send_header("Content-Length", str(fs[6]))
+		self.send_header("Content-Length", str(len(t)))
 		self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
 		self.end_headers()
 
 		# send file content
-		self.copyfile(f, self.wfile)
+		
+		
+		self.wfile.write(t)
 		f.close()
-
-	def copyfile(self, source, outputfile):
-		shutil.copyfileobj(source, outputfile)
-
+		
 	def do_POST(self):
 		# conditions for activation of client:
 		#	target url: redirect.php
 		#	parameters: fire=""
 		
 			
-		self.send_response(200)
-		self.send_header("Content-type", "text/html")
-		self.end_headers()
 		
 		length = int(self.headers.getheader('content-length'))
 		field_data = self.rfile.read(length)
@@ -201,36 +339,59 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 				mac = self.getMacFromARPCache(self.getClientIP())
 				if len(mac) > 0:
 					print "Granting access for %s"%(mac)
-		
-		#print fields
-		# form = cgi.FieldStorage(
-			# fp=self.rfile, 
-			# headers=self.headers,
-			# environ={'REQUEST_METHOD':'POST',
-					 # 'CONTENT_TYPE':self.headers['Content-Type'],
-					 # })
-		# username = form.getvalue("uname")
-		# password = form.getvalue("pword")
-		
-		# if username == 'testuser' and password == 'pass1234':
-			# remote_IP = self.client_address[0]
-			# print 'New authorization from '+ remote_IP
-			# print 'Updating IP tables'
-			# subprocess.call(["iptables","-t", "nat", "-I", "PREROUTING","1", "-s", remote_IP, "-j" ,"ACCEPT"])
-			# subprocess.call(["iptables", "-I", "FORWARD", "-s", remote_IP, "-j" ,"ACCEPT"])
-			# self.wfile.write("You are now authorized. Navigate to any URL")
-		# else:
-			# self.sendPortalPage()
-		
-	#the following function makes server produce no output
-	#comment it out if you want to print diagnostic messages
-	#def log_message(self, format, *args):
-	#    return
+					self.iptif.add_allowed_mac(mac)
+					self.respond302("www.google.de", "80", "/")
+					return
 
-httpd = BaseHTTPServer.HTTPServer(('', lport), CaptivePortal)
+		self.do_GET()
 
-try:
-	httpd.serve_forever()
-except KeyboardInterrupt:
-	pass
-httpd.server_close()
+		#self.send_response(200)
+		#self.send_header("Content-type", "text/html")
+		#self.end_headers()
+
+
+def main(argv):
+	lhost = "10.0.0.1"
+	lport = 9090
+	hotspotif = "wlan1"
+	
+	try:
+		opts, args = getopt.getopt(argv, "i:h:p:", ["interface=", "host=", "port="])
+	except getopt.GetoptError:
+		usage()
+		sys.exit(2)
+
+	for opt, arg in opts:
+		if opt in ("-i", "--interface"):
+			hotspotif = arg
+		elif opt in ("-h", "--host"):
+			lhost = arg
+			
+			
+		elif opt in ("-p", "--port"):
+			lport = int(arg)
+			
+
+	IPTablesIF.hotspotif = hotspotif
+	IPTablesIF.lhost = lhost
+	IPTablesIF.lport = lport
+	CaptivePortal.lport = lport
+	CaptivePortal.lhost = lhost
+	CaptivePortal.iptif = IPTablesIF() # do it here, as we don't have an __init__ function
+	
+	httpd = BaseHTTPServer.HTTPServer(('', lport), CaptivePortal)
+
+	try:
+		httpd.serve_forever()
+	except KeyboardInterrupt:
+		pass
+	finally:
+		print "Deleting IPTables rules"
+		IPTablesIF.clear_chains(CaptivePortal.iptif)
+	httpd.server_close()
+
+if __name__ == "__main__":
+	if len(sys.argv) < 1:
+		print "to few arguments"
+		sys.exit()
+	main(sys.argv[1:])
