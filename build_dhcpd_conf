@@ -1,5 +1,30 @@
 function create_dhcpd_conf
 {
+	cat << EOF > $1
+	
+bind-interfaces
+# no DNS
+port=0 
+interface=${interface_hotspot}
+listen-address=${interface_hotspot_ip}
+dhcp-range=${interface_hotspot_dhcp_range},${interface_hotspot_netmask},1m
+# router
+dhcp-option=3,${interface_hotspot_ip}
+# DNS
+dhcp-option=6,8.8.8.8
+# NETBIOS NS
+dhcp-option=44,${interface_hotspot_ip}
+dhcp-option=45,${interface_hotspot_ip}
+
+dhcp-leasefile=${TMPWORKDIR}/dnsmasq.leases
+dhcp-authoritative
+log-dhcp
+	
+EOF
+}
+
+function create_dhcpd_confold
+{
 	#clear
 	echo "#BUILD_HOSTAPD_CONF_START" >> $1
 	cat << EOF > $1

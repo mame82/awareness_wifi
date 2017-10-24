@@ -282,11 +282,11 @@ then
 fi
 
 
-# create lease file
-touch $TMPWORKDIR/dhcpd.leases
-#start dhcp-server on hotspot interface
-dhcpd -lf $TMPWORKDIR/dhcpd.leases -cf $TMPWORKDIR/dhcpd.conf $interface_hotspot
-
+# # create lease file
+# touch $TMPWORKDIR/dhcpd.leases
+# #start dhcp-server on hotspot interface
+# dhcpd -lf $TMPWORKDIR/dhcpd.leases -cf $TMPWORKDIR/dhcpd.conf $interface_hotspot
+dnsmasq -C $TMPWORKDIR/dhcpd.conf
 
 
 # ToDo: Backup old routing setting
