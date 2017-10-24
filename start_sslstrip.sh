@@ -54,4 +54,5 @@ function disable_sslstrip()
 
 enable_sslstrip
 echo "SSLStrip running ... ENTER to kill"
+read
 disable_sslstrip
