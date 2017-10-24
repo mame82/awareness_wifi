@@ -5,6 +5,8 @@
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 
 source $SCRIPTPATH/setup.conf
+NOW=$(date +"%F_%H_%M")
+LOGPREFIX=$LOGDIR/${NOW}_
 
 
 function enable_sslstrip()

