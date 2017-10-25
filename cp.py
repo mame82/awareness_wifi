@@ -335,8 +335,10 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 		#	parameters: fire=""
 		
 			
-		
-		length = int(self.headers.getheader('content-length'))
+		contentlength = self.headers.getheader('content-length')
+		length = 0
+		if contentlength:
+			length = int(contentlength)
 		field_data = self.rfile.read(length)
 		fields = urlparse.parse_qs(field_data)
 
@@ -386,6 +388,8 @@ def main(argv):
 	CaptivePortal.iptif = IPTablesIF() # do it here, as we don't have an __init__ function
 	
 	httpd = BaseHTTPServer.HTTPServer(('', lport), CaptivePortal)
+	
+	httpd.RequestHandlerClass.timeout = 0.3 # set timeout for arriving requests to 300ms second
 
 	try:
 		httpd.serve_forever()
