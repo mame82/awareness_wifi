@@ -168,7 +168,7 @@ dnsmasq -C $TMPWORKDIR/dhcpd.conf
 # and to avoid relying on hardcoded DNS
 echo "Starting DNS..."
 echo portal.portal $interface_hotspot_ip > $SCRIPTPATH/dns2proxy/spoof.cfg
-python $SCRIPTPATH/dns2proxy/dns2proxy_no_debug.py $interface_hotspot $LOGDIR/ & #2>&1 > /dev/null&
+python $SCRIPTPATH/dns2proxy/dns2proxy_no_debug.py $interface_hotspot $LOGDIR/ 2>&1 > /dev/null&
 
 
 # ToDo: Backup old routing setting
