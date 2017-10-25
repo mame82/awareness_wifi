@@ -77,7 +77,7 @@ class IPTablesIF(object):
 		self.exec_comand("iptables -t mangle -i " + self.hotspotif + " -A " + self.cpchain_name + " -j MARK --set-mark 99")
 
 		#redirect http requests marked with 99 to CP
-		self.exec_comand("iptables -t nat -A PREROUTING -m mark --mark 99 -p tcp --dport 80 -j REDIRECT --to-port " + str(self.lport))
+		self.exec_comand("iptables -t nat -I PREROUTING 1 -m mark --mark 99 -p tcp --dport 80 -j REDIRECT --to-port " + str(self.lport))
 
 		#drop marked packets which aren't directed to port 80 
 		self.exec_comand("iptables -t filter -A FORWARD -m mark --mark 99 -j DROP")
@@ -86,7 +86,7 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 	wwwroot="var/www/"
 	portalpage="index.html"
 	placeholder_prefix = "placeholder_"
-	default_page="http://www.google.de"
+	default_page="www.bing.com"
 	iptif = None
 
 	lport       = 9090
@@ -211,21 +211,23 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 		self.send_header('Server', "Captive Portal by MaMe82")
 	
 	
-	def respond302(self, host, port, uri):
+	def respond302(self, host, port="", uri=""):
+		if len(str(port)) > 0:
+			port = ":" + str(port)
 		resp = """
 		<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 		<html><head>
 		<title>302 Found</title>
 		</head><body>
 		<h1>Found</h1>
-		<p>The document has moved <a href="http://%s:%s%s">here</a>.</p>
+		<p>The document has moved <a href="http://%s%s%s">here</a>.</p>
 		</body></html>
 		"""%(host, port, uri)
 	
 		self.send_response(302)
 		self.send_header("Content-type", "text/html")
 		self.send_header("Content-Length", str(len(resp)))
-		self.send_header("Location", "http://%s:%s%s"%(host, port, uri))
+		self.send_header("Location", "http://%s%s%s"%(host, port, uri))
 		self.send_header("Connection", "close")
 		self.end_headers()
 		self.wfile.write(resp)
@@ -344,7 +346,7 @@ class CaptivePortal(BaseHTTPServer.BaseHTTPRequestHandler):
 				if len(mac) > 0:
 					print "Granting access for %s"%(mac)
 					self.iptif.add_allowed_mac(mac)
-					self.respond302("www.google.de", "80", "/")
+					self.respond302(self.default_page)
 					return
 
 		self.do_GET()
