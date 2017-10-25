@@ -5,7 +5,7 @@ from mitmproxy import ctx
 FONT = './mitmproxy-scripts/Arial-bold.ttf'
 
 def add_watermark( in_img, angle=23, opacity=0.25):
-    text = "M&M\n(Markus & Marcus)"
+    text = "CyberAwareness\nEL PASO"
     img = in_img.convert('RGBA')
     watermark = Image.new('RGBA', img.size, (0,0,0,0))
     size = 2
