@@ -1,0 +1,10 @@
+author: MaMe82
+
+To demo how an app requests permission, the base apk has to target android
+framework 22 or below. On newer target frameworks app permission aren't requested on 
+install, but on use (thinking back to 2017 security talks in Las Vegas, this
+comes with its own issues ... another story).
+
+Additionally apps compiled with latest build tools and android framework
+couldn't be rebuild with apktool without error. See comments on inject-payload.sh
+for details.
