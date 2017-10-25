@@ -10,8 +10,9 @@ listen-address=${interface_hotspot_ip}
 dhcp-range=${interface_hotspot_dhcp_range},${interface_hotspot_netmask},1m
 # router
 dhcp-option=3,${interface_hotspot_ip}
-# DNS
-dhcp-option=6,8.8.8.8
+# DNS (we serve a DNS via dns2proxy)
+dhcp-option=6,${interface_hotspot_ip}
+# dhcp-option=6,8.8.8.8
 # NETBIOS NS
 dhcp-option=44,${interface_hotspot_ip}
 dhcp-option=45,${interface_hotspot_ip}

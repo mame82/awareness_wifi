@@ -34,7 +34,7 @@ function correct_hosts
 {
 	if $(cat /etc/hosts | grep -q $(hostname))
 	then
-		echo "/etc/hosts correct"
+		echo "Hostname entry present in /etc/hosts ..."
 	else
 		echo "/etc/hosts not correct, fixing ..."
 		echo 127.0.0.1 `hostname` >> /etc/hosts
@@ -113,35 +113,6 @@ function start_in_new_terminal
 }
 
 
-
-function ask_for_sslstrip
-{
-  option=0
-
-  read -p "Run SSLSTRIP (y/n) default (n): " option
-  
-
-
-  case $option in
-	Yes|yes|Y|y ) ENABLE_SSLSTRIP=true;echo "Enable SSLStrip";;
-	No|no|N|n|* ) ENABLE_SSLSTRIP=false;echo "Disable SSLStrip";;
-	
-  esac
-  
-  if [ "$ENABLE_SSLSTRIP" == true ]
-  then
-  echo "Remark:"
-  echo "If SSLStrip is runned in conjuction with MITMPROXY"
-  echo "plain http-traffic wouldn't be redirected to MITMPROXY"
-  echo "and must be captured separately (e.g. ettercap, wireshark)"
-  echo "MITMProxy scripts won't work for plain HTTP!!!"
-  
-  fi
-  echo
-  
- 
-}
-
 function start_ettercap
 {
   option=0
@@ -162,9 +133,6 @@ function start_ettercap
 
 create_hostapd_conf ${TMPWORKDIR}/hostapd.conf
 create_dhcpd_conf ${TMPWORKDIR}/dhcpd.conf
-
-# ToDo: only needed if cp is started --> move to if
-ask_for_sslstrip
 
 correct_hosts
 rfkill unblock wlan
@@ -193,7 +161,14 @@ $hostapd $TMPWORKDIR/hostapd.conf > ${LOGPREFIX}hostapd.log &
 sleep 5
 
 # enable DHCP
+echo "Starting DHCP..."
 dnsmasq -C $TMPWORKDIR/dhcpd.conf
+
+# dns2proxy is now mandatory, for its spoofing capabilities
+# and to avoid relying on hardcoded DNS
+echo "Starting DNS..."
+echo portal.portal $interface_hotspot_ip > $SCRIPTPATH/dns2proxy/spoof.cfg
+python $SCRIPTPATH/dns2proxy/dns2proxy_no_debug.py $interface_hotspot $LOGDIR/ & #2>&1 > /dev/null&
 
 
 # ToDo: Backup old routing setting
@@ -236,11 +211,12 @@ read
 # create WLAN list from hostapd log (karma)
 $SCRIPTPATH/parselog.sh ${LOGPREFIX}hostapd.log
 
-pkill dhcpd
-pkill sslstrip
-pkill sslsplit
-pkill hostapd
-pkill python
+
+kill $(ps -aux | grep dns2proxy_no_debug.py | grep -v -e grep | awk '{print $2}') 2>&1 > /dev/null
+kill $(ps -aux | grep "dnsmasq -C $TMPWORKDIR/dhcpd.conf" | grep -v -e grep | awk '{print $2}') 2>&1 > /dev/null
+pkill hostapd > /dev/null
+
+
 iptables --policy INPUT ACCEPT
 iptables --policy FORWARD ACCEPT
 iptables --policy OUTPUT ACCEPT
@@ -253,5 +229,3 @@ then
 	killall ettercap
 fi
 
-#service stunnel4 stop
-#service ssh stop

