@@ -389,7 +389,7 @@ def main(argv):
 	
 	httpd = BaseHTTPServer.HTTPServer(('', lport), CaptivePortal)
 	
-	httpd.RequestHandlerClass.timeout = 0.3 # set timeout for arriving requests to 300ms second
+	httpd.RequestHandlerClass.timeout = 2 # set timeout for arriving requests to 2000ms second
 
 	try:
 		httpd.serve_forever()
