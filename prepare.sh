@@ -13,5 +13,7 @@ read
 echo "Replacing apktool"
 cp /usr/share/apktool/apktool.jar /usr/share/apktool/apktool.jar.bkp
 cp apktool_2.3.1.jar /usr/share/apktool/apktool.jar
+echo "Remove old framework file to force creation of a new one"
+rm ~/.local/share/apktool/framework/1.apk
 echo "New apktool version: "
 apktool --version
